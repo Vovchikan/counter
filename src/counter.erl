@@ -28,9 +28,10 @@
 -define (DELAY, 60 * 1000000). % sec -> microseconds
 
 -type start_error() :: {already_started, pid()} | term().
+-type timestamp_list() :: [] | list(erlang:timestamp()).
 
 
--record (state, {list :: [] | list(erlang:timestamp())}).
+-record (state, {list :: timestamp_list()}).
 
 
 %%%=============================================================================
@@ -49,7 +50,7 @@ incr () ->
   gen_server:call (?MODULE, {incr, erlang:timestamp()}).
 
 get_value () ->
-  gen_server:call (?MODULE, get_value).
+  gen_server:call (?MODULE, {get_value, erlang:timestamp()}).
 
 %%%=============================================================================
 %%% gen_server callbacks
@@ -58,12 +59,10 @@ init ([]) ->
   {ok, #state{ list = [] }}.
 
 handle_call ({incr, Time}, _From, #state{ list = CounterList }=State) ->
-  %?PRINT ("incr() from ~p, with Time = ~p~n", [_From, Time]),
   {reply, ok, State#state{ list = [Time | CounterList ] }};
 
-handle_call (get_value, _From, #state{ list = CounterList }=State) ->
-  %?PRINT ("get_value() from ~p~n", [_From]),
-  Value = count_value (CounterList),
+handle_call ({get_value, TimeNow}, _From, #state{ list = CounterList }=State) ->
+  Value = count_value (CounterList, TimeNow),
   {reply, Value, State};
 
 handle_call (_Request, _From, State) ->
@@ -89,14 +88,19 @@ code_change (_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%=============================================================================
 
-count_value (TimeList) ->
-  TimeNow = erlang:timestamp(),
+-spec count_value (
+        TimeList :: timestamp_list(),
+        TimeNow  :: erlang:timestamp()
+       ) -> integer().
+count_value (TimeList, TimeNow) ->
   F = fun
-        ([H | _T], Acc) ->
-          case timer:now_diff (TimeNow, H) > ?DELAY of
-            true -> Acc;
-            false -> Acc + 1
+        ({_, _, _}=Timestamp, Acc) ->
+          case timer:now_diff (TimeNow, Timestamp) of
+            Diff when Diff  > ?DELAY  -> Acc;
+            _Else                     -> Acc + 1
           end;
-        (_, _Acc) -> 0
+        (BadElement, _Acc) ->
+          ?PRINT ("Error: wrong format of timestamp = ~p~n", [BadElement]),
+          0
       end,
   lists:foldl (F, 0, TimeList).
