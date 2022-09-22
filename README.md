@@ -6,7 +6,13 @@ An OTP application
 
 ## Build
 
-    $ rebar3 compile
+    $ ./rebar3 compile
+
+---
+
+## Common Tests
+
+    $ ./rebar3 ct
 
 ---
 
