@@ -41,11 +41,11 @@ init([]) ->
   SupFlags = #{strategy => one_for_one,
                intensity => 3,
                period => 1000},
-  ChildSpecs = [ #{id       => counter,
-                   start    => {counter, start_link, []},
+  ChildSpecs = [ #{id       => counter_srv,
+                   start    => {counter_srv, start_link, []},
                    restart  => transient,
                    type     => worker,
-                   modules  => [counter]}
+                   modules  => [counter_srv]}
                ],
 
   {ok, {SupFlags, ChildSpecs}}.

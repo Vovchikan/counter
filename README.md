@@ -13,8 +13,8 @@ An OTP application
 ## Use
 
 * type in console `./rebar3 shell` to run application
-* use `counter:incr()` to increase call counter
-* use `counter:get_value()` to get number of call counters for the last  **60 seconds**.
+* use `counter_srv:incr()` to increase call counter
+* use `counter_srv:get_value()` to get number of call counters for the last  **60 seconds**.
 
 ---
 

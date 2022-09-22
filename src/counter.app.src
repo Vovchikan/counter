@@ -1,6 +1,6 @@
 {application, counter,
  [{description, "An OTP application"},
-  {vsn, "0.1.0"},
+  {vsn, "0.2.0"},
   {registered, []},
   {mod, {counter_app, []}},
   {applications,
@@ -8,7 +8,7 @@
     stdlib
    ]},
   {env,[]},
-  {modules, []},
+  {modules, [counter_srv]},
 
   {licenses, ["Apache 2.0"]},
   {links, []}
