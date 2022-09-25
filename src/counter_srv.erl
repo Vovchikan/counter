@@ -25,13 +25,15 @@
           )).
 -define (PRINT (F), ?PRINT (F, [])).
 
--define (DELAY, 60 * 1000000). % sec -> microseconds
+-define (DELAY_DEF, 60 * 1000000). % sec -> microseconds
 
 -type start_error() :: {already_started, pid()} | term().
 -type timestamp_list() :: [] | list(erlang:timestamp()).
 
 
--record (state, {list :: timestamp_list()}).
+-record (state, {delay :: integer (),
+                 list  :: timestamp_list()
+                }).
 
 
 %%%=============================================================================
@@ -46,9 +48,11 @@
 start_link() ->
   gen_server:start_link ({local, ?MODULE}, ?MODULE, [], []).
 
+-spec incr () -> ok.
 incr () ->
   gen_server:call (?MODULE, {incr, erlang:timestamp()}).
 
+-spec get_value () -> integer().
 get_value () ->
   gen_server:call (?MODULE, {get_value, erlang:timestamp()}).
 
@@ -56,13 +60,15 @@ get_value () ->
 %%% gen_server callbacks
 %%%=============================================================================
 init ([]) ->
-  {ok, #state{ list = [] }}.
+  {ok, #state{ list  = [],
+               delay = ?DELAY_DEF }}.
 
 handle_call ({incr, Time}, _From, #state{ list = CounterList }=State) ->
   {reply, ok, State#state{ list = [Time | CounterList ] }};
 
-handle_call ({get_value, TimeNow}, _From, #state{ list = CounterList }=State) ->
-  Value = count_value (CounterList, TimeNow),
+handle_call ({get_value, TimeNow}, _From, #state{ delay = Delay,
+                                                  list = CounterList }=State) ->
+  Value = count_value (CounterList, TimeNow, Delay),
   {reply, Value, State};
 
 handle_call (_Request, _From, State) ->
@@ -90,17 +96,18 @@ code_change (_OldVsn, State, _Extra) ->
 
 -spec count_value (
         TimeList :: timestamp_list(),
-        TimeNow  :: erlang:timestamp()
+        TimeNow  :: erlang:timestamp(),
+        Delay    :: integer()
        ) -> integer().
-count_value (TimeList, TimeNow) ->
+count_value (TimeList, TimeNow, Delay) ->
   F = fun
         ({_, _, _}=Timestamp, Acc) ->
           case timer:now_diff (TimeNow, Timestamp) of
-            Diff when Diff  > ?DELAY  -> Acc;
-            _Else                     -> Acc + 1
+            Diff when Diff  > Delay  -> Acc;
+            _Else                    -> Acc + 1
           end;
-        (BadElement, _Acc) ->
+        (BadElement, Acc) ->
           ?PRINT ("Error: wrong format of timestamp = ~p~n", [BadElement]),
-          0
+          Acc
       end,
   lists:foldl (F, 0, TimeList).
