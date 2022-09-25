@@ -1,4 +1,4 @@
--module (counter_SUITE).
+-module (counter_incr_SUITE).
 
 -include_lib ("common_test/include/ct.hrl").
 
